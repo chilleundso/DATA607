@@ -1,0 +1,37 @@
+---
+title: "Data 607 - Homework 1"
+output:
+  html_document:
+    css: ./lab.css
+    highlight: pygments
+    theme: cerulean
+  pdf_document: default
+---
+
+Student: Manolis Manoli
+---
+Overview of article and data chosen
+---
+The data reviewed in this exercise is from the article "The Democratic Presidential Candidates Are Becoming Less Popular" (https://fivethirtyeight.com/features/the-democratic-presidential-candidates-are-becoming-less-popular/).
+It shows how Democratic favorability polls have been reducing over the past months while Trump's have stayed static. However, it also highlights that among those who see Trump as favorable the amount of people to see him as very favorable is far greater than for any other candidate - highlighting the highly divisive nature of President Trump. 
+
+We will take out 4 columns from the data since it doesn't add any value for the analysis of the poling data: question_id, pollster_id, population and url.
+
+```{r dataextraction}
+
+library(httr)
+
+presidpoll <- read.csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/presidential-candidate-favorables-2019/favorability_polls_rv_2019.csv", header=T)
+
+presidpoll$question_id <- NULL
+presidpoll$pollster_id <- NULL
+presidpoll$population <- NULL
+presidpoll$url <- NULL
+
+```
+---
+Conclusion
+---
+
+It was very intersting to see how Biden has lost a by far the most in terms of favorability since the beginnig of the polling.
+It would be very intersting to extend the analysis to more current polls to view how the failed impeachement process has impacted the various candidate's chances.
