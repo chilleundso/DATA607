@@ -1,0 +1,31 @@
+---
+title: "Data 607 - Homework 2"
+author: ""
+output:
+    pdf_document:
+        extra_dependencies: ["geometry", "multicol", "multirow"]
+editor_options: 
+  chunk_output_type: console
+---
+### __Student: Manolis Manoli__
+
+
+
+# loading required library
+library(RMySQL)
+
+# setting my connection paramater
+db_user <- 'rlogin'
+db_password <- '<removed>'
+db_name <- 'week2_movies'
+db_table <- 'movie_ratings'
+db_host <- '127.0.0.1'
+db_port <- 3306
+
+# Connecting to DB, query the table, store result as dataframe and close connection
+mydb <-  dbConnect(MySQL(), user = db_user, password = db_password,
+                 dbname = db_name, host = db_host, port = db_port)
+s <- paste0("select * from ", db_table)
+rs <- dbSendQuery(mydb, s)
+df <-  fetch(rs, n = -1)
+on.exit(dbDisconnect(mydb))
