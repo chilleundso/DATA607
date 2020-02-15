@@ -1,0 +1,107 @@
+---
+title: "Data 607 - Homework 3"
+author: "Manolis Manoli"
+output:
+    pdf_document:
+        extra_dependencies: ["geometry", "multicol", "multirow"]
+editor_options: 
+  chunk_output_type: console
+---
+
+#1. Using the 173 majors listed in fivethirtyeight.com’s College Majors dataset [https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/], provide code that identifies the majors that contain either "DATA" or "STATISTICS"
+
+```{r Stat_data_find,eval=TRUE}
+
+library(httr)
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "fivethirtyeight/data/master/college-majors/"
+fileName   <- "majors-list.csv"
+
+
+majors <- read.csv(paste0(urlRemote, pathGithub, fileName),header = TRUE)
+
+grep(pattern = 'STATISTICS|DATA', majors$Major, value = TRUE, ignore.case = TRUE)
+
+```
+
+#2 Write code that transforms the data below:
+
+[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+
+[13] "olive"        "salal berry"
+
+Into a format like this:
+
+c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry")
+
+First we create the start string
+```{r startstring,eval=TRUE}
+
+startstr <- '[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+
+[13] "olive"        "salal berry"'
+
+```
+Next we find the positions of all quotation marks
+```{r find_quotation,eval=TRUE}
+quot = '"'
+posi <- gregexpr(patter = quot,text = startstr)
+quotpos <- vector()
+i <- 1
+while (!is.na(posi[[1]][i])){
+quotpos[i] <- posi[[1]][i]
+i <- i+1
+}
+
+```
+Then we create a vector of all words
+```{r create_word_vec,eval=TRUE}
+
+len <- length(quotpos)/2
+wordvect <- vector(length=len)
+for (i in 1:len) {
+wordvect[i] <- substring(startstr,posi[[1]][2*i-1]+1,posi[[1]][2*i]-1)
+i <- i+1
+}
+print(wordvect)
+
+
+
+```
+The two exercises below are taken from R for Data Science, 14.3.5.1 in the on-line version:
+
+#3 Describe, in words, what these expressions will match:
+
+    (.)\1\1
+    will match characters that are three times in a row
+    
+    "(.)(.)\\2\\1"
+    will match any 4 characters that read the same forward and backward (palindrome)
+    
+    (..)\1
+    two characters repeated 
+    
+    "(.).\\1.\\1"
+    five characters where the first, third and fifth are the same and the second and fourth can be anything
+    
+    "(.)(.)(.).*\\3\\2\\1"
+    6 or more carachters where the first three charachters are the same as the last three in reverse order (abcxyzcba)
+
+#4 Construct regular expressions to match words that:
+
+    Start and end with the same character.
+    "^(.).*\\1$"
+    
+    Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.)
+    "(..).*\\1"
+    
+    Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.)
+    "(.).*\\1.*\\1"
