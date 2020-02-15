@@ -2,9 +2,14 @@
 title: "Data 607 - Homework 3"
 author: "Manolis Manoli"
 output:
-    pdf_document:
-        extra_dependencies: ["geometry", "multicol", "multirow"]
-editor_options: 
+  pdf_document:
+    extra_dependencies:
+    - geometry
+    - multicol
+    - multirow
+  html_document:
+    df_print: paged
+editor_options:
   chunk_output_type: console
 ---
 
@@ -90,10 +95,12 @@ The two exercises below are taken from R for Data Science, 14.3.5.1 in the on-li
     two characters repeated 
     
     "(.).\\1.\\1"
-    five characters where the first, third and fifth are the same and the second and fourth can be anything
+    five characters where the first, third and fifth are the same and the second and fourth can 
+    be anything
     
     "(.)(.)(.).*\\3\\2\\1"
-    6 or more carachters where the first three charachters are the same as the last three in reverse order (abcxyzcba)
+    6 or more carachters where the first three charachters are the same as the last three 
+    in reverse order (abcxyzcba)
 
 #4 Construct regular expressions to match words that:
 
@@ -105,3 +112,10 @@ The two exercises below are taken from R for Data Science, 14.3.5.1 in the on-li
     
     Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.)
     "(.).*\\1.*\\1"
+    
+   
+  
+     
+GitHub:
+https://github.com/chilleundso/DATA607/blob/master/Data607_Homework3.Rmd  
+RPubs: https://rpubs.com/ManolisM/Data607_HW3
