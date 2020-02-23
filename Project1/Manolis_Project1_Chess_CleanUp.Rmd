@@ -1,9 +1,14 @@
 ---
 title: "Project 1 - Chess Data Clean-Up"
-author: ""
+author: ''
 output:
-    pdf_document:
-        extra_dependencies: ["geometry", "multicol", "multirow"]
+  pdf_document:
+    extra_dependencies:
+    - geometry
+    - multicol
+    - multirow
+  html_document:
+    df_print: paged
 ---
 
 ### Manolis Manoli
@@ -112,3 +117,9 @@ write.csv(finaltbl,"C:/Documents/Data Science Master/Data607_Data/Project1/Chess
 
 We were able to utilize "|" to make split the text into usable columns.
 If the txt file was not as consistent or did not have these clear seperators we would have to write a far more general algorithm that allowed for more varied input structures.
+
+*RMarkdown* can be found on Github:
+https://github.com/chilleundso/DATA607/blob/master/Project1/Manolis_Project1_Chess_CleanUp.Rmd  
+*RPubs* can be found here:
+https://rpubs.com/ManolisM/Data607_Project1
+
