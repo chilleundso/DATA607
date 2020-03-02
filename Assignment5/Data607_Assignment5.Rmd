@@ -1,0 +1,132 @@
+---
+title: "Data 607 - Assignment 5"
+author: "Manolis Manoli"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    extra_dependencies:
+    - geometry
+    - multicol
+    - multirow
+editor_options:
+  chunk_output_type: console
+---
+```{r ddata_download_only,echo=F}
+
+
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "chilleundso/DATA607/master/Assignment5/"
+fileName   <- "Airline.csv"
+
+airraw <- read.csv(paste0(urlRemote, pathGithub, fileName),header = TRUE)
+airraw[3,3:6] <- ''
+
+```
+```{r dshow_raw,eval=TRUE,echo=F}
+library(knitr)
+kable(airraw)
+```
+
+The table above describes arrival delays for two airlines across five destinations.  
+
+The ask is to:
+   
+(1) Create a .CSV file that includes all of the information above.  You’re encouraged to use a “wide” structure similar to how the information appears above, so that you can practice tidying and transformations as described below.
+   
+(2) Read the information from your .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data.  
+   
+(3) Perform analysis to compare the arrival delays for the two airlines.
+
+  <br>
+  <br>
+   
+#### 1) Loading required libraries and downloading data
+
+We load all required libraries:
+
+```{r load_libraries, eval=TRUE, results='hide',message=F}
+library(httr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+```
+
+We download the CSV from my GitHub account replacing all empty spaces with NAs to make the clean up easier later on:
+
+```{r ddata_download,eval=TRUE}
+
+
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "chilleundso/DATA607/master/Assignment5/"
+fileName   <- "Airline.csv"
+
+
+air <- read.csv(paste0(urlRemote, pathGithub, fileName),header = TRUE, na.strings=c(""," ","NA"))
+
+kable(air)
+```
+ 
+  <br>
+  
+#### 2a) Clean-Up
+
+As we can see the header for the first two columns are not very helpful so we change them to something more explanatory, secondly we remove all rows that are entirely N/As and lastly we fill all missing airline names with the name that is directly above:
+
+```{r rename_header,eval=TRUE}
+#rename the first 2 column headers to "Airline" and "Status"
+air <- dplyr::rename(air, Airline = X, Status = X.1)
+#removing all rows that are entirely N/As (row 3):
+air <- dplyr::filter_all(air,any_vars(!is.na(.)))
+#we use the fill function to fill any N/A with the value directly above it in the data frame to add airline names for the second and 4th row
+air <- tidyr::fill(air,Airline)
+kable(air)
+```
+
+The above table now is entirely filled, however it is not in a format that is easy to be used for further investigations:
+
+  <br>
+  
+#### 2b) Reformatting
+
+Using *gather* we will generate a row specific for every tripple of airline, status and departure city (in the table below we are only showing the first 6 entries to make the report more readable)
+
+```{r make_long_data,eval=TRUE}
+air <- tidyr::gather(air, "Destination", "Amount", -Airline, -Status)
+kable(head(air))
+```
+
+For our final reformatting we will use *spread* to move the amount of delays and on-time flights per destination and airline into the same row
+
+```{r on-time-delay-same-line,eval=TRUE}
+air <- tidyr::spread(air,Status, Amount)
+kable(air)
+```
+
+  <br>
+  
+#### 3) Investigation
+To make the data more easily comparable we "normalize" it by adding the  delay_rate which gives the percentage of delays per total flight for each pair of destination and airline:
+```{r add_delayrate,eval=TRUE}
+air$delay_rate <- air$delayed / (air$delayed+air$'on time')
+kable(air)
+```
+  
+To investigate the behavior of delay rates per destination and airline we plot the delay rate for every city with both airlines next to each other in a grouped barchart (source for the code: 
+https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html)
+```{r barplot,eval=TRUE}
+ggplot(air, aes(fill=Airline, y=delay_rate, x=reorder(Destination, delay_rate))) + 
+    geom_bar(position="dodge", stat="identity") +
+    xlab('Destination') +
+    ylab('Delay Rate')
+```
+
+### Conculsion
+
+What we can see is that for every destination AMWEST has a higher delay rate than Alaska and the order of delay (from least to most) per destination is: Phoenix, San Diego, Los Angeles, Seattle and lastly San Francisco.
+
+
+GitHub:
+https://github.com/chilleundso/DATA607/blob/master/Data607_Homework3.Rmd  
+RPubs: https://rpubs.com/ManolisM/Data607_HW3
