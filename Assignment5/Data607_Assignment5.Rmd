@@ -2,13 +2,13 @@
 title: "Data 607 - Assignment 5"
 author: "Manolis Manoli"
 output:
-  html_document:
-    df_print: paged
   pdf_document:
     extra_dependencies:
     - geometry
     - multicol
     - multirow
+  html_document:
+    df_print: paged
 editor_options:
   chunk_output_type: console
 ---
@@ -128,5 +128,7 @@ What we can see is that for every destination AMWEST has a higher delay rate tha
 
 
 GitHub:
-https://github.com/chilleundso/DATA607/blob/master/Data607_Homework3.Rmd  
-RPubs: https://rpubs.com/ManolisM/Data607_HW3
+https://github.com/chilleundso/DATA607/blob/master/Assignment5/Data607_Assignment5.Rmd  
+
+RPubs:
+https://rpubs.com/ManolisM/Data607_Assignment5_flight_delays
