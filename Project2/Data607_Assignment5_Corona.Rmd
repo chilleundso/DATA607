@@ -1,0 +1,242 @@
+---
+title: "Data 607 - Project 2 - Part 1"
+author: "Manolis Manoli"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+
+We have chosen to investigate the coronavirus data set provided by John Hopkins University which themselves source the data from DXY, an online platform run by members of the Chinese nedical community.
+
+COVID-19, the scientific name of the coronavirus, had its first recorded case in Wuhan, China in December 2019 and has since across the world with more than 100,000 cases globally as of early March.
+
+We will start by looking at general trends of the spread of the virus, followed by a look at the mortality rate. We finish by investigating the growth rate of confirmed cases, specifically in the most mature case, China, to see if we can find any indication about growth there and make any conclusions about the future of the virus in the rest of the world.
+
+  <br>
+  <br>
+   
+#### 1) Loading required libraries and downloading data
+
+We load all required libraries:
+
+```{r load_libraries, eval=TRUE, results='hide',message=F}
+library(httr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(date)
+library(tidyverse)
+```
+
+We download there seperate CSV (for confirmed cases, recoveries and deaths) from the John Hopkins GitHub account and save them as data frames:
+
+```{r data_download,eval=TRUE}
+
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
+fileNameConfirmed   <- "time_series_19-covid-Confirmed.csv"
+fileNameRecovered   <- "time_series_19-covid-Recovered.csv"
+fileNameDeaths   <- "time_series_19-covid-Deaths.csv"
+
+
+confs <- read.csv(paste0(urlRemote, pathGithub, fileNameConfirmed),header = TRUE)
+recovs<- read.csv(paste0(urlRemote, pathGithub, fileNameRecovered),header = TRUE)
+deaths <- read.csv(paste0(urlRemote, pathGithub, fileNameDeaths),header = TRUE)
+ 
+kable(head(confs[,1:10]))
+
+```
+
+#### 2) Data Clean-up
+
+As we can see in the above table the data is provide in a long format. In the below section we transform all 3 data frames to take long format:
+
+```{r create3tables,eval=TRUE}
+#Creating a long table using gather
+confs <- tidyr::gather(confs, "Date", "Amount", -Province.State, -Country.Region, -Lat, -Long)
+#transforming the date column into a date structure:
+confs$Date<-as.Date(confs$Date,format='X%m.%d.%y')
+#adding a status label to flag data belongs to confirmed data set
+confs$Status <- 'confirmed'
+
+#Creating a long table using gather
+recovs <- tidyr::gather(recovs, "Date", "Amount", -Province.State, -Country.Region, -Lat, -Long)
+#transforming the date column into a date structure:
+recovs$Date<-as.Date(recovs$Date,format='X%m.%d.%y')
+#adding a status label to flag data belongs to recovered data set
+recovs$Status <- 'recovered'
+
+#Creating a long table using gather
+deaths <- tidyr::gather(deaths, "Date", "Amount", -Province.State, -Country.Region, -Lat, -Long)
+#transforming the date column into a date structure:
+deaths$Date<-as.Date(deaths$Date,format='X%m.%d.%y')
+#adding a status label to flag data belongs to deaddata set
+deaths$Status <- 'dead'
+
+kable(head(confs))
+```
+
+The above example shows the first rows of our new long data frame for the confirmed data set. The recovered and dead data set have the identiacal layout, only with different values in the Amount and Status column.
+
+Next we want to combine the confirmed, recovered and dead data set into on master data set:
+
+```{r combine_in_master,eval=TRUE}
+#we stack all three data sets underneath each other
+master <- rbind(confs,recovs,deaths)
+#we then widen the data set to have three new columns one for each amount of confirmed, recovered and dead cases:
+master <- tidyr::spread(master,Status,Amount)
+
+kable(head(master))
+```
+
+The above is now our clean up data set that we will work with for the remainder of the investiagtion
+
+#### 3) Global Trend Investigation
+
+First, we will gain a view of the global trends of confirmed cases, recoveries and deaths (going forward referred to as measurement tripplet): 
+
+```{r global_view,eval=TRUE}
+#aggregate the data to make our original data set into a global data set with no more locational details:
+mastertotal <- stats::aggregate(master[ ,6:8], FUN = "sum", by = list(master$Date))
+#rename the date column to be date again
+names(mastertotal)[1]<-"Date"
+
+kable(head(mastertotal))
+```
+
+The global data set provides our measurement tripplet for global numbers for each date. 
+
+```{r plot_global_view,eval=TRUE}
+#sizing up our y axis
+max_y <- max(mastertotal$confirmed)*1.1
+#defining our color scheme and legend names:
+colors <- c("confirmed" = "blue", "dead" = "red", "recovered" = "green")
+
+#using ggplot with three geom_lines to show our measurement triplet in one graph:
+ggplot(mastertotal, aes(x = Date)) +
+    geom_line(aes(y = confirmed, color = "confirmed"), size = 1.2) +
+    geom_line(aes(y = recovered, color = "recovered"), size = 1.2) +
+    geom_line(aes(y = dead, color = "dead"), size = 1.2) +
+    labs(x = "Date",
+         y = "Number of patients",
+         color = "Legend") +
+    scale_color_manual(values = colors) +
+    ggtitle("Global confirmed, recovered and dead patients") +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+One behavior we can see is a large spike in confirmed cases around February 10th which was a correction of measurement by the Chinese governement, strongly increasing the number of cases in a short span of time. 
+We can see that after some lead time the recovery curve has moved somewhat in parallel while the curve for the cases that have passed away seemingly has not changed over the span of recording.
+This is mostly due to the very different scale which makes it is difficult to evaluate the behavior of deaths versus new confirmed cases. Therefore, I am interested in looking at the death per confirmed cases (mortality) ratio.
+
+#### 4) Mortality Rate Globally
+
+Before we begin, we need to acknowledge that there will be a lag between the measurment of a confirmed case and a death cases, however since we do not have any information about how much that seems to be we will ignore this lag and see which conclusions we can draw.
+
+
+
+```{r death_ratio,eval=TRUE}
+#create a new column which contains the ratio of cases of death and total confirmed cases
+mastertotal$deathratio <- mastertotal$dead/mastertotal$confirmed*100
+colors <- c("death per confirmed" = "black")
+
+ggplot(mastertotal, aes(x = Date)) +
+    geom_line(aes(y = deathratio, color = "death per confirmed"), size = 1.2) +
+    labs(x = "Date",
+         y = "death/confirmed (%)",
+         color = "Legend") +
+    scale_color_manual(values = colors) +
+    ggtitle("Deaths per confirmed case") +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+We can see that the death per confirmed case reduced to 2% in the first half of February, which was the number that was in the news throughout that time period. However, more recently, reporters have been speaking of a mortality rate closer to 3%, an uptick which can also be seen in the graph. This uptick could be precisely due to the aforementioned lag between a person being tested positive and passing away.
+ <br> 
+ 
+#### 5) Focusing on China
+
+I would like to see what the calculation looks like when we reduce the sample set to China, to see if we see similar behavior in a more "mature" state of the crisis.
+
+```{r filterChina,eval=TRUE}
+#we filter our master data set to only include mainland china
+masterChina <-  master %>% filter(Country.Region == "Mainland China")
+#we then again remove all locational details to comtinue our investigation only with our measurement triplet for each date specific to China
+masterChinatotal <- stats::aggregate(masterChina[ ,6:8], FUN = "sum", by = list(masterChina$Date))
+names(masterChinatotal)[1]<-"Date"
+``` 
+
+```{r death_ratio_China,eval=TRUE}
+#create a new column for mortality rate
+masterChinatotal$deathratio <-masterChinatotal$dead/masterChinatotal$confirmed*100
+
+```
+
+```{r death_ratio_China2,eval=TRUE}
+colors <- c("death per confirmed" = "black")
+ggplot(masterChinatotal, aes(x = Date)) +
+    geom_line(aes(y = deathratio, color = "death per confirmed"), size = 1.2) +
+    labs(x = "Date",
+         y = "death/confirmed (%)",
+         color = "Legend") +
+    scale_color_manual(values = colors) +
+    ggtitle("Deaths per confirmed case in China") +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+In general, we can see that both the global and Chinese mortality rate graph look very similar. This is primarily due to the fact that the number of Chinese confirmed and death cases vastly outweighs the rest of the world.
+We can see, however, that while the global mortality rate actually seemed to be plateauing that of China seems to be growing steadily towards the right end of our graphs. Again, this could be due to the fact that while the many countries are only now seeing their first confirmed cases with very few deaths, China might be seeing a more realistic mortality rate - not a great sign for this to come for the rest of the world.
+
+To not leave this incestigation on a too pesimistic note we will look at the growth rate of confirmed cases in China:
+
+```{r confirm_growth_ratio_China,eval=TRUE}
+masterChinatotal$confirmshift <- masterChinatotal$confirm
+```
+
+We create a 1 day shifted confirmed cases column in order to compare it the non shifted column:
+
+```{r confirm_growth_ratio_China2,eval=TRUE}
+ masterChinatotal$confirmshift[2:length(masterChinatotal$confirmshift)] <- masterChinatotal$confirmshift[1:(length(masterChinatotal$confirmshift)-1)]
+
+ masterChinatotal$confirmgrowth <- masterChinatotal$confirmed / masterChinatotal$confirmshift -1
+
+```
+
+In the below graph we can see a clear reduction ...
+```{r confirm_growth_ratio_China3,eval=TRUE}
+colors <- c("confirmed growth" = "black")
+ggplot(masterChinatotal, aes(x = Date)) +
+    geom_line(aes(y = confirmgrowth, color = "confirmed growth"), size = 1.2) +
+    labs(x = "Date",
+         y = "daily confirmed growth (%)",
+         color = "Legend") +
+    scale_color_manual(values = colors) +
+    ggtitle("Daily Confirmed Growth Rate") +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+...and we can see even clearer when looking at more recent and stable data that there in no strong growth in new cases:
+
+```{r confirm_growth_ratio_China4,eval=TRUE}
+numrows <- nrow(masterChinatotal)
+
+colors <- c("confirmed growth" = "black")
+
+ggplot(masterChinatotal[25:numrows,], aes(x = Date)) +
+    geom_line(aes(y = confirmgrowth, color = "confirmed growth"), size = 1.2) +
+    labs(x = "Date",
+         y = "daily confirmed growth (%)",
+         color = "Legend") +
+    scale_color_manual(values = colors) +
+    ggtitle("Daily Confirmed Growth Rate") +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+GitHub:
+https://github.com/chilleundso/DATA607/blob/master/Assignment5/Data607_Assignment5.Rmd  
+
+RPubs:
+https://rpubs.com/ManolisM/Project2-1
