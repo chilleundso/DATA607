@@ -150,7 +150,7 @@ ggplot(marry_minmax, aes(x=reorder(State, -percchange), y=percchange)) +
 
 
 GitHub:
-https://github.com/chilleundso/DATA607/blob/master/Assignment5/Data607_Assignment5.Rmd  
+https://github.com/chilleundso/DATA607/blob/master/Project2/Data607_Assignment5_Marriage.Rmd
 
 RPubs:
 https://rpubs.com/ManolisM/Project2-2
