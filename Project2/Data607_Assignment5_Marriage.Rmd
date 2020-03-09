@@ -1,0 +1,156 @@
+---
+title: "Data 607 - Project 2 - Part 2"
+author: "Manolis Manoli"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+
+I have chosen to ivestigate marriage data by State between 1990 and 2016.
+
+
+We will investigate overall trends and look at some indivual behaviors on the state level
+
+  <br>
+  <br>
+   
+#### 1) Loading required libraries and downloading data
+
+We load all required libraries:
+
+```{r load_libraries, eval=TRUE, results='hide',message=F}
+library(httr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(date)
+library(readxl)
+```
+
+We download the "xlsx' file from the world data site (https://data.world/siyeh/state-marriage-rate):
+
+```{r data_download,eval=TRUE,results=F}
+GET("https://query.data.world/s/6clilulytst42jgx3frithsindjkzt", write_disk(tf <- tempfile(fileext = ".xlsx")))
+marriage <- read_excel(tf)
+```
+
+In the table below we can see that the data set shows the marriage rate (per 1000) for each state in the years 1990, 1995, 1999 through 2016:
+```{r raw_data,eval=TRUE}
+kable(head(marriage),digits=1)
+```
+
+We have a look at the state with the highest and lowest marriage rate:
+```{r maxdata,eval=TRUE}
+#use arrange to find max
+maxstate <- arrange(marriage, desc(marriage$"2016"))[1,]
+kable(maxstate,digits=1)
+```
+
+Nevada has the highest marriage rate for any given year but has seen a steep decrease. The high amount of weddings is most likely due to the very popular wedding tourism of out of state pairs getting married in Nevada.
+
+```{r mindata,eval=TRUE}
+#use arrange to find min
+minstate <- arrange(marriage, marriage$"2016")[1,]
+kable(minstate,digits=1)
+```
+
+Illinois has the lowest marriage rate in 2016.
+
+```{r total,eval=TRUE}
+#use summarise to find look globally
+avg_mar <- round(marriage %>%
+  summarise_if(is.numeric, mean, na.rm = TRUE),1)
+#avg_mar <- round(avg_mar,1)
+kable(avg_mar)
+
+long_avg_mar <- tidyr::gather(avg_mar, "year", "AvgMarRate")
+
+```
+
+```{r marry_avg_plot,eval=TRUE,fig.width=10,fig.height=4}
+colors <- c("Average Marriage Rate" = "black")
+
+ggplot(long_avg_mar, aes(x = year)) +
+    geom_line(aes(y = AvgMarRate, color = "Average Marriage Rate",group = 1), size = 1.2) +
+    labs(x = "year",
+         y = "marriage rate",
+         color = "Legend") +
+    scale_color_manual(values = colors) +
+    ggtitle("Average US-wide Marriage Rate") +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+In the above graph we show the unweighted average wedding rate, which would mean that we assume that all states have the same population, which is clearly not true. However, we still consider an average over all state's mortality rate to be an intersting indicator.
+We can clearly see a strong reduction of marriage rate from 11.6 to roughly 7.4
+
+<br>
+<br>
+
+```{r wide_to_long,eval=TRUE}
+#we make the data long with gather:
+marry <- tidyr::gather(marriage, "Year", "Amount", -State)
+# kable(head(marry))
+```
+```{r first_last_year,eval=TRUE}
+#we then make the data wide again by focusing on the first and last year of our data series (1990 and 2016)
+marry_minmax <- marry %>% 
+    dplyr::filter(Year == min(marry$Year)| Year == max(marry$Year))
+marry_minmax <- tidyr::spread(marry_minmax,Year,Amount)
+
+#we then make the data wide again by focusing on the first and last year of our data series (1990 and 2016)
+```
+
+We now have a table with the first an last year's marriage rate for every state:
+
+```{r first_last_year2,eval=TRUE}
+kable(head(marry_minmax))
+```
+
+Looking at the states with the least and most change below, again Nevada stands out with a reduction by more than 70 percent:
+
+```{r min_max2,eval=TRUE}
+#add percentage change col
+marry_minmax$percchange <- (marry_minmax$'1990' - marry_minmax$'2016') / marry_minmax$'1990'
+#add abs change col
+marry_minmax$abschange <- (marry_minmax$'1990' - marry_minmax$'2016')
+kable(head(marry_minmax))
+```
+
+states with the least change:
+```{r min_max3,eval=TRUE, fig.height=6}
+kable(head(arrange(marry_minmax, desc(percchange))))
+```
+
+states with the most change:
+```{r min_max4,eval=TRUE, fig.height=6}
+kable(head(arrange(marry_minmax, percchange)))
+```
+
+From the below plot we can see that most states have reduced marriage rates by around 20 to 40 percent:
+
+```{r plotmax,eval=TRUE, fig.height=6}
+
+
+ggplot(marry_minmax, aes(x=reorder(State, -percchange), y=percchange)) + 
+  geom_bar(stat = "identity", width=0.9) +
+  coord_flip() +
+  ggtitle("Percentage reduction in Birthrate by State 2016 vs 1990") +
+  xlab("State") + 
+  ylab("percentage reduction in birthrate")+
+  scale_fill_brewer(palette="Oranges")
+
+
+```
+
+
+
+GitHub:
+https://github.com/chilleundso/DATA607/blob/master/Assignment5/Data607_Assignment5.Rmd  
+
+RPubs:
+https://rpubs.com/ManolisM/Project2-2
