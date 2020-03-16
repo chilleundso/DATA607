@@ -1,0 +1,101 @@
+---
+title: "Data 607 - Assignment 7"
+author: "Manolis Manoli"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+The assignment is to load 3 different data structures (HTML, JSON and XML) into R and read the tables from these. They should all contain the same information: favorite books with title, authors and things we like about them. However, we need to identify any differences in data structure of the resulting data frame.
+
+Load needed libraries
+```{r load-libraries,warning=F}
+library(RCurl)
+library(XML)
+library(methods)
+library(jsonlite)
+library(rlist)
+library(knitr)
+```
+
+create my github path
+```{r set-Github-dir,eval=T}
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "chilleundso/DATA607/master/Assignment7/"
+```
+
+#### 1) HTML
+ 
+  
+We start of by downloading our HTML format from our Github account and saving it into a dataframe format:
+```{r HTML,eval=T}
+#create HTML URL
+fileNameHTML   <- "HTMLtable.html"
+HTML_URL <- paste0(urlRemote, pathGithub, fileNameHTML)
+
+#We get and read HTML
+HTML <- getURLContent(HTML_URL) 
+HTML <- readHTMLTable(HTML)
+
+#make HTML into dataframe
+HTML <- list.clean(HTML, fun = is.null, recursive = FALSE)
+n.rows <- unlist(lapply(HTML, function(t) dim(t)[1]))
+HTML_table <- HTML[[which.max(n.rows)]]
+
+#print HTML table
+kable(HTML_table)
+```
+
+
+#### 2) JSON
+  
+Next we do the same with the JSON format:
+```{r JSON,eval=T}
+#create JSON URL
+fileNameJSON   <- "JSONtable.json"
+JSON_URL <- paste0(urlRemote, pathGithub, fileNameJSON)
+
+#We get and read JSON
+JSON <- fromJSON(JSON_URL)
+
+#make JSON into dataframe
+JSON_table <- JSON[[1]]
+JSON_table <- as.data.frame(JSON_table)
+
+#print JSON table
+kable(JSON_table) 
+```
+
+#### 3) XML
+  
+And finally we do the same with the XML format:
+```{r XML,eval=T}
+#create XML URL
+fileNameXML   <- "XMLtable.xml"
+XML_URL <- paste0(urlRemote, pathGithub, fileNameXML)
+
+#We get and parse JSON
+XML_data <- getURL(XML_URL)
+XML_table <- xmlParse(XML_data)
+
+#make XML into dataframe
+XML_table <- xmlToDataFrame(XML_table)
+
+#print XML table
+kable(XML_table)
+```
+
+
+#### 4) Comparison/Results
+  
+We can see that the HTML and XML result in the same data frame, with all fields being "simple" strings. The JSON file on the other hand has vectors for the fields where there are multiple inputs (multiple authors and multiple things I like about each book). This makes working with the JSON file easier down the road since we will not need to do further tidying if we would like to for example count how many books one specific author has written.
+
+  
+
+    
+
+GitHub:
+https://github.com/chilleundso/DATA607/blob/master/Assignment5/Data607_Assignment5.Rmd  
