@@ -1,4 +1,4 @@
-<?xml version = "1.0" encoding="uft-8"?>
+<?xml version = "1.0" encoding="UTF-8"?>
 
 
 <Books>
@@ -8,7 +8,7 @@
     <What_I_Like>fun examples, educational, thought provoking</What_I_Like>
   </Book>
   <Book>
-     <Name>The Trial</Name>
+    <Name>The Trial</Name>
     <Author>Franz Kafka</Author>
     <What_I_Like>dystopia, justice and judgment, isolation</What_I_Like>
   </Book>
