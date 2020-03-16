@@ -1,0 +1,20 @@
+<?xml version = "1.0" encoding="uft-8"?>
+
+
+<Books>
+  <Book>
+    <Name>Freakonomics</Name>
+    <Author>Steven D. Levitt, Stephen J. Dubner</Author>
+    <What_I_Like>fun examples, educational, thought provoking</What_I_Like>
+  </Book>
+  <Book>
+     <Name>The Trial</Name>
+    <Author>Franz Kafka</Author>
+    <What_I_Like>dystopia, justice and judgment, isolation</What_I_Like>
+  </Book>
+  <Book>
+    <Name>The Stranger</Name>
+    <Author>Albert Camus</Author>
+    <What_I_Like>philosophy of the absurd, existentialism</What_I_Like>
+  </Book>
+</Books>
