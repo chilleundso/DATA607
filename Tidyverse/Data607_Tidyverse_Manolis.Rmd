@@ -1,0 +1,121 @@
+---
+title: "Data 607 - Assignment 7"
+author: "Manolis Manoli"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+The assignment is to present a use case for the tidyverse packages and sdemonstrate how to use one or more of the capabilities TidyVerse package with your selected dataset
+
+#### 1) Libraries and Data
+
+Load needed libraries
+```{r load-libraries,warning=F, message=F}
+# The easiest way to get all libraries is to load the whole tidyverse but we will load just the packages we need
+
+#library(tidyverse)
+
+# Alternatively, loading all packages that we use:
+library(readr)
+library(lubridate)
+library(dplyr)
+library(knitr)
+```
+
+create my github path
+```{r set-Github-dir,eval=T}
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "chilleundso/DATA607/master/Tidyverse/"
+```
+
+#### 2) Readr
+
+We start of by downloading our csv file from my Githib (originally from https://www.kaggle.com/jessemostipak/hotel-booking-demand) and turning it into a dataframe format:
+```{r read-csv,eval=T}
+#create HTML URL
+fileNamecsv   <- "hotels.csv"
+csv_URL <- paste0(urlRemote, pathGithub, fileNamecsv)
+
+#We read the CSV
+hotels_raw <- readr::read_csv(csv_URL) 
+
+```
+
+
+#### 3) Dplyr::filter
+
+We want to do some early filtering on the data to exclude some special cases from our data set:
+```{r filter-zero-days,eval=T}
+#we exclude all data rows that have no weekend and no weekday stays:
+
+hotels <- dplyr::filter(hotels_raw, stays_in_weekend_nights != 0 | stays_in_week_nights != 0 )
+names(hotels)
+```
+
+#### 4) Lubridate
+As we can see the dataframe has individual columns for the arrival year, month and day so we use lubridate to make an new arrival date column in date format and create a column that hows the check-out date based on adding days stayed in the hotel.
+
+```{r make-arrival-checkout-date}
+
+#lubridat lets us easily create a date object out of three columns that have year in yyyy, moonths in text format and days in dd
+hotels$arrival_date <- paste(hotels$arrival_date_year  , hotels$arrival_date_month, hotels$arrival_date_day_of_month, sep="-")  %>% lubridate::ymd() %>% as.Date()
+
+#we can easily add days to the date to get a cehck-out date column (some )
+hotels$checkout_date <- ymd(hotels$arrival_date) + days(hotels$stays_in_weekend_nights) + days(hotels$stays_in_week_nights)
+
+```
+
+
+#### 5) Dplyr::select
+
+We want to have a look at just the columns we used and created in the above section so we use dplyr::select
+```{r select-date-columns}
+
+kable(head(hotels %>% 
+  dplyr::select(arrival_date_year:arrival_date_day_of_month, arrival_date : checkout_date)))
+
+```
+
+
+#### 6) Dplyr::summarise/group_by/count/arrange
+
+Lastly we want see how we can use summarise, group by and count to show some overview statistics:
+```{r cancelation-columns}
+
+#We want to see how the reservation status behaves with the deposit type:
+
+hotels %>% 
+  dplyr::group_by(deposit_type) %>% 
+  dplyr::count(reservation_status)
+
+
+
+#To demonstrate the powerful pipe operator in combination with some dplyr functions we look at the average length of stay grouped by deposit type
+
+hotels %>%
+  dplyr::group_by(deposit_type) %>%
+  dplyr::summarise(mean = mean(checkout_date-arrival_date), n = n()/nrow(hotels)) %>%
+  dplyr::arrange(-mean)
+
+
+```
+From the first table we can actually see a large amount of cancellations even within the non-refundable bookings.  
+
+The second table shows us that the refunable bookings are on average the longest stay (which makes sense since they are probably the most expensive ones) however there are only very few of them (about 0.1%)
+We can see that the next longest stays are from bookings without deposits which make up about 88% of bookings. 
+Lastly, no refund bookings are on average the shortest.
+
+#### 7) Summary
+  
+dplyr has great functions to summarise, an access certain fields and pivot them around to show any desired permutation of the data 
+
+    
+
+GitHub:
+https://github.com/chilleundso/DATA607/blob/master/Tidyverse/Data607_Tidyverse_Manolis.Rmd
+
+https://rpubs.com/ManolisM/Data607_tidyverse
