@@ -1,0 +1,144 @@
+---
+title: "Data 607 - Assignment 9"
+author: "Manolis Manoli"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+The task is to choose one of the New York Times APIs, construct an interface in R to read in the JSON data, and transform it into an R DataFrame.
+
+Load needed libraries
+```{r load-libraries,warning=F}
+library(httr)
+library(jsonlite)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(plyr)
+```
+
+#### 1) create NYT URL
+
+```{r set-URL,eval=T}
+url <- "https://api.nytimes.com/svc/"
+query <- "movies/v2/reviews/search.json?opening-date=1989-01-01;1990-01-01&api-key="
+key  <- "4AfLOCzNQR72CE1EoSJLpRAIP5xV5y4s"
+#combine URL and my key into a URL
+JSON_URL <- paste0(url,query,key)
+```
+
+
+#### 2) create dataframe from JSON
+  
+Next we do the same with the JSON format:
+```{r JSON,eval=T}
+#create a "JSON-list"
+JSON <- fromJSON(JSON_URL)
+
+#make JSON into a table
+JSON_table <- JSON$results
+#make table into data frame
+JSON_df <- as.data.frame(JSON_table)
+
+#have a look at the column names and first few rows
+names(JSON_df)
+head(JSON_df)
+
+```
+
+#### 3) looping through pages 
+
+I used the looping through multiple pages from: https://cran.r-project.org/web/packages/jsonlite/vignettes/json-paging.html   
+My attempt failed and I couldn't find a solution to my rownames issue (see below)
+This looping works in the colsole, however it will not let me bind it in a markdown (potentially due to limits on API)
+```{r looping-pages,eval=F}
+#store all pages in a list first
+
+pages <- list()
+for(i in 1:10){
+  mydata <- fromJSON(paste0(JSON_URL, "&offset=", i))
+  message("Retrieving page ", i)
+  pages[[i+1]] <- mydata$results
+}
+
+#combine all into one
+longmovielist <- rbind_pages(pages)
+```
+
+#### 4) my looping attempt 
+
+My loop below would not work since merging the resulting data frames would not work since the rownames has the same counting and there seems to be nothing you can to to change the row numbering
+
+Error in .rowNamesDF<-(x, value = value) :
+  duplicate 'row.names' are not allowed
+In addition: Warning message:
+non-unique values when setting 'row.names': ‘1’, ‘10’, ‘11’, ‘12’, ‘13’, ‘14’, ‘15’, ‘16’, ‘17’, ‘18’, ‘19’, ‘2’, ‘20’, ‘3’, ‘4’, ‘5’, ‘6’, ‘7’, ‘8’, ‘9’
+
+```{r looping--broken,eval=F}
+#initilizing the loop parameters:
+brk=0
+i=1
+longmovieDF <- JSON_df
+
+#while will break when the resulting JSON file is empty
+while(brk==0){
+url <- "https://api.nytimes.com/svc/"
+query1 <- "movies/v2/reviews/search.json?opening-date=1989-01-01;1990-01-01&offset="
+query2 <- "&api-key="
+key  <- "4AfLOCzNQR72CE1EoSJLpRAIP5xV5y4s"
+
+offs=20*i
+
+JSON_URL <- paste0(url,query1,offs,query2,key)
+#create a "JSON-list"
+JSON <- fromJSON(JSON_URL)
+#JSON <- fromJSON(JSON_URL)
+JSON_table <- JSON$results
+#make table into data frame
+JSON_df <- as.data.frame(JSON_table)
+
+
+rownames1 <- seq(from = offs + 1, to = offs + nrow(JSON_df) , by = 1)
+rownames(JSON_df) <- rownames1
+#rownames(longmovieDF)
+
+rownames(JSON_df)
+rownames(longmovieDF)
+
+longmovieDF <- rbind(longmovieDF,JSON_df)
+
+# 
+# names(longmovieDF)
+# df1 <- as.matrix(JSON_df)
+# df2 <- as.matrix(JSON_df)
+# longmovieDF <- rbind(df1,df2)
+# longmovieDF <- as.data.frame(longmovieDF)        
+                
+if(nrow(JSON_df) == 0){
+  brk=1}
+
+longmovieDF <- rbind(longmovieDF,JSON_mtrx)
+i < i+1
+i
+}
+
+#after we ran all loops we transform back
+longmovieDF <- as.data.frame(longmovieDF)  
+```
+#### 5) Comparison/Results
+  
+It is surprisingly easy to extract API from the NYT website (the help page is very good)
+swiping through pages was a bit more difficult
+  
+
+    
+
+GitHub:
+https://github.com/chilleundso/DATA607/blob/master/Assignment7/Data607_Assignment7.Rmd
+
+RPubs:
+https://rpubs.com/ManolisM/Data607_Assignment7
