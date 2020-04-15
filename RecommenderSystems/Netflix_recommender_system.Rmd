@@ -1,0 +1,74 @@
+---
+title: "Netflix Recommender System"
+author: "Manolis Manoli"
+date: "4/14/2020"
+output: 
+  html_document: 
+    theme: journal
+    toc: yes
+    toc_collapsed: yes
+    toc_depth: 3
+    toc_float: yes
+---
+
+
+
+
+# Introduction
+
+```{r, out.width = "80%", fig.align="center", echo = FALSE}
+knitr::include_graphics("https://static0.srcdn.com/wordpress/wp-content/uploads/2020/04/Tiger-King-Becomes-One-Of-Most-Popular-Netflix-Shows.jpg")
+```
+
+
+<br>
+
+In the gloomy days of Covid-19 quarantine at least one thing has been kept people laughing and exchanging their thoughts, and that is the **Netflix** show *Tiger Kind*. I am not sure how this show landed on my recommended list since I only watch highly sophisticated content (not) ... but since it was recommended to me, I better watch it!
+  
+Netflix has made a remarkable transformation from sending DVDs to one of the first and currently most used streaming service (outside of youtube) according to [statista](https://www.statista.com/statistics/910875/us-most-popular-video-streaming-services-by-monthly-average-users/). This is to no small part due to the legendary "binge watching" potential facilitated by the state of the art recommender system.
+
+
+Perform a Scenario Design analysis as described below.  Consider whether it makes sense for your selected recommender system to perform scenario design twice, once for the organization (e.g. Amazon.com) and once for the organization's customers.
+
+# Scenario Design for Netflix
+
+- Target Users: Anyone with access to internet and a device such as a smart TV, phone, tablet, laptop or computer </li>
+- Key Goals: Recommend movies or series that will keep the customer interested and therefore subscribed to the platform.
+- What Can Help: Allow people to more actively vote if they would like to receive more recommendations on any given title they have seen.
+
+
+# Netflix's Recommender System
+
+Netflix actually offers some insight into their system on their website [website](https://help.netflix.com/en/node/100639)
+
+> We estimate the likelihood that you will watch a particular title in our catalog based on a number of factors including:
+>
+> - your interactions with our service (such as your viewing history and how you rated other titles),
+> - other members with similar tastes and preferences on our service, and
+> - information about the titles, such as their genre, categories, actors, release year, etc.
+>
+> In addition to knowing what you have watched on Netflix, to best personalize the recommendations we also look at things like:
+>
+> - the time of day you watch,
+> - the devices you are watching Netflix on, and
+> - how long you watch.
+  
+So now that we know roughly how Netflix builds a construct of the user's preferences and profile the question is how do they present this:
+  
+The Starting page of Netflix has a few different rows:
+
+- the latest shoes the user had been watching
+- trending show
+- "because you watched xyz"
+- broader categories such as "binge-worthy shows", "Award-Winning Comedies", etc.
+
+The order of the rows (which genre to show first etc.) is being chosen via the user preferences. But not only the order of each of these rows is done via the user profile, also the order of movies within each of these rows is structured around the user's preferences.
+
+However, it doesn't stop at the actual recommendations. The pictures / thumbnails that are being used to portray a show are also chosen based on an algorithm. Netflix does group A/B testing to see how often a certain show is being selected with different pictures but also uses a user's general preferences to choose a thumbnail or that user. This has come under some scrutiny (the [NYT](https://www.nytimes.com/2018/10/23/arts/television/netflix-race-targeting-personalization.html) reports) due to the fact that it seems to use a user's assumed race and sexual orientation among other things to choose a thumbnail. For example, it will chose a picture with an African America actor who has a minor role in the movie for users that are assumed to be black.
+
+
+# Recomendations
+
+One feature that I am missing is choosing a movie that I liked and telling Netflix to recommend me a handful of movies just like it. Netflix doesl recommend movies and series based on items I watched previously, however, as far as I can tell it is currently not up to the user to choose the item that Netflix will use as the basis for recommending similar movies.
+
+https://rpubs.com/ManolisM/Data607_Recommender_Systems
