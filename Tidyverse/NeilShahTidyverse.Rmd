@@ -1,0 +1,282 @@
+---
+title: 'Neil Shah: DATA 607: Tidvyverse Project'
+output:
+  html_document:
+    df_print: paged
+---
+
+## Introduction: TidyVerse 
+
+Whether you are new to R or a grizzly veteran, you might had heard the term "tidydata" or "tidyverse". What is Tidyverse you ask? Is it fun? Will it make your life easier? Is it a cult? 
+
+Yes, yes and probably!
+
+In short "Tidy Data" is a methodology championed by Hadley Wickham [aka R Jesus] in his [seminal](https://vita.had.co.nz/papers/tidy-data.pdf) journalarticel that lays out a framework to organize, clean and transform data sets so one can spend *less* time munging and *more* time analyzing!
+
+Tidyverse has three simple rules:
+
+1. Each variable must have its own column
+2. Each observation must have its own row.
+3. Each value must have its own cell.
+
+![Tidy](https://miro.medium.com/max/3840/1*7jjzhy4KknPz9hJVnC_w7w.png)
+
+Tidying up your data might seem strange at first but there are advantages to using said framework.
+
+1. Tidy data is consistent.
+
+2. Tidy data is vectorized and is easy to use in R
+
+
+## The Tidy Universe 
+
+The Tidy Universe is actually a collection R packages that are helpful for data munging/manipulation. From the main [reference](https://www.tidyverse.org/) page--the "core" Tidyverse packages are:
+
+1. dplyr 
+2. ggplot2
+3. tibble
+4. readr
+5. purrr
+6. stringr
+7. forcats 
+
+I also like to use tidyr
+
+We will be showcasing a few select packages and how they can useful for data analysis!
+
+## The Data
+
+We will be manipulating the [Master Candy Power Rankings](https://fivethirtyeight.com/features/the-ultimate-halloween-candy-power-ranking/) from 538--the complete data set can be found via this [GitHub](https://raw.githubusercontent.com/fivethirtyeight/data/master/candy-power-ranking/candy-data.csv)--tooth brush's optional!
+
+## Loading Packages 
+
+Tidyverse and tidyr can be loaded easily as follows
+```{r, message=FALSE}
+library(tidyverse)
+library(tidyr)
+```
+
+Loaded!
+
+```
+-- Attaching packages --------------------------------------- tidyverse 1.3.0 --
+v ggplot2 3.2.1     v purrr   0.3.3
+v tibble  2.1.3     v stringr 1.4.0
+v readr   1.3.1     v forcats 0.4.0
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()
+> library(tidyr)
+```
+
+## Loading the data 
+
+First let's load the data into a data frame and explore.
+
+```{r}
+df=read.csv('https://raw.githubusercontent.com/fivethirtyeight/data/master/candy-power-ranking/candy-data.csv')
+```
+
+And let's just so some basic exploration.
+
+```{r}
+str(df)
+```
+
+ 
+Alright--13 columns[variables] that composed of factors, numbers and integers. No need to change any variable type--thank you 538!
+ 
+ Now let's look at how it's structured. 
+ 
+```{r}
+head(df)
+```
+
+From the data we have a 85 different candies, each described by either a single or mulitple attribute, with a unque sugarpercent, pricepercent and winpercent.
+
+## Converting the dataframe to a tibble with as_tibble:
+
+When working in the tidyverse it's often useful to convert your dataframe to a tibble which is a type of dataframe with a tbl_df class. Tibbles are essentially standardized dataframes, with various properties, one of which is a visually appealing rectangular format.
+
+### Usage
+
+as_tibble(.data)
+
+### Description:
+
+as_tibble() will convert a passed dataframe to a tibble
+
+### Example: converting a dataframe to a tibble
+
+```{r}
+as_tibble(df)
+```
+
+```
+# A tibble: 85 x 13
+   competitorname chocolate fruity caramel peanutyalmondy nougat crispedricewafer  hard   bar pluribus sugarpercent
+   <fct>              <int>  <int>   <int>          <int>  <int>            <int> <int> <int>    <int>        <dbl>
+ 1 100 Grand              1      0       1              0      0                1     0     1        0        0.732
+ 2 3 Musketeers           1      0       0              0      1                0     0     1        0        0.604
+ 3 One dime               0      0       0              0      0                0     0     0        0        0.011
+ 4 One quarter            0      0       0              0      0                0     0     0        0        0.011
+ 5 Air Heads              0      1       0              0      0                0     0     0        0        0.906
+ 6 Almond Joy             1      0       0              1      0                0     0     1        0        0.465
+ 7 Baby Ruth              1      0       1              1      1                0     0     1        0        0.604
+ 8 Boston Baked ~         0      0       0              1      0                0     0     0        1        0.313
+ 9 Candy Corn             0      0       0              0      0                0     0     0        1        0.906
+10 Caramel Apple~         0      1       1              0      0                0     0     0        0        0.604
+```
+
+Compare this to the default head(df) print and we can see the tibble is cleaner, providers the datatypes below each column and has a rectanguar structure.
+
+## Using dplyr: select to slice dataframe 
+
+Let's say we have a certain sweet-tooth and just want to look at candys and their sugar-content column, and not deal with the others. 
+
+We can use select() from the dplyr package!
+
+### Usage
+
+select(.data,...)
+
+
+### Description:
+
+select() allows you to choose or rename variables/columns in a passed table/dataframe. One can isolate, drop, rename or slice a dataframe. Select is very powerful and has a host of different [functions](https://dplyr.tidyverse.org/reference/select.html)
+
+
+### Example: selecting certain columns [sugarpercent]
+
+Let's say we have a sweet-tooth and want to only isolate candy's and their sugarpercent
+
+```{r}
+select(as_tibble(df),competitorname,sugarpercent)
+```
+
+
+## Using dplyr:: arrange to sort 
+
+From our last example we isolated the candy columns and sugar content but they aren't sorted! What if we had a diabetes and want to make sure we had a list of candies with the lowest sugar?
+
+
+We can use dplyr: arrange
+
+### Description:
+
+arrange() accepts a table and reorganizes(sorts) it by a passed column--by default it uses ascending order. Wrapping desc() 
+
+
+### Usage
+
+arrange(.data,...)
+
+### Example: Sorting candy's by ascending sugarpercent 
+
+```{r}
+arrange(select(as_tibble(df),competitorname,sugarpercent),sugarpercent)
+```
+
+
+### Usage
+desc(.data,...)
+
+### Example: Sorting candy's by descending sugarpercent 
+
+```{r}
+arrange(select(as_tibble(df),competitorname,sugarpercent),desc(sugarpercent))
+```
+
+
+## Using dplyr:: %>% to pipe functions
+
+By now you noticed that to do these steps of tidy, the tibble, selecting and then arranging, I either have to pass the function and dataframe through each step or would need to make intermediate frames which would take up needless memory. One powerful way in the tidyverse to chain functions/commands is piping via %>%. 
+
+Note: %>% is actually part of the magrittr package but it's loade dwith dplyr. 
+
+### Description:)
+
+%>% takes whatever is left to it and forward (or pipes) it to  an expression on the right.--this can be an expression, function, action
+
+
+### Usage 
+
+x %>% f(x
+
+### Example: Repeating the previous steps--sorting a tibble converted dataframe by a selected columns 
+
+```{r}
+df %>% as_tibble() %>% select(competitorname,sugarpercent) %>% arrange(sugarpercent)
+```
+
+
+
+Compare that with the previous used code
+
+```
+arrange(select(as_tibble(df),competitorname,sugarpercent),desc(sugarpercent))
+```
+
+
+## Using dplyr::filter to filter
+
+Assume we have a love for choclate candy. We might want to filter for candy that has chocolate in it
+
+
+We can use dplyr::filter
+
+### Description:
+
+Use filter() find rows/cases where conditions are true. Unlike base subsetting with [, rows where the condition evaluates to NA are dropped.
+
+
+### Usage
+
+filter(.data, ...)
+
+### Example: Sorting candy's by ascending sugarpercent 
+
+```{r}
+filter(as_tibble(df),chocolate ==1)
+```
+
+If we are worried about high chocolate amount in chocoalte treats we could want to have a look at average sugar content in choclate versus non-choclate treats:
+
+```{r}
+as_tibble(df) %>% 
+  dplyr::group_by(chocolate) %>% 
+  dplyr::summarize(avgsugarpercent = mean(sugarpercent, na.rm = TRUE))
+```
+
+As we can see chocolate candy only has 6% more sugar on average so nothing too worrying.
+
+
+
+
+### Example piping via ggplot2
+
+The piping %>% operator is very useful in it's ability to pass a chain of commands to a function. Let's say we want to see if there is a relationship between winpercentage and sugarpercentage, we can follow the previous steps (selecting the winpercentage column in addition) and sending it all to ggplot [another core tidyverse package but beyond the scope of this notebook]
+
+```{r}
+df %>% as_tibble() %>% select(competitorname,winpercent,sugarpercent) %>% ggplot(aes(x=winpercent,y=sugarpercent))+geom_point()
+```
+
+The data looks evenly distributed so there doesn't seem to be a linear relation but let's add a best fit regression line to show off %>%
+
+
+```{r}
+df %>% as_tibble() %>% select(competitorname,winpercent,sugarpercent) %>% ggplot(aes(x=winpercent,y=sugarpercent))+geom_point()+geom_smooth(method='lm')
+```
+
+
+Finally--let's label the candy's for our diabetic friend that have a win percentage above 60% but have a sugar content less than 50%
+
+```{r}
+df %>% as_tibble() %>% select(competitorname,winpercent,sugarpercent) %>% ggplot(aes(x=winpercent,y=sugarpercent),label=competitorname)+geom_point()+geom_smooth(method='lm')+geom_text(aes(label=ifelse((sugarpercent<0.50 & winpercent>60),as.character(competitorname),'')))
+```
+
+
+## Intermediary Conclusions
+
+As you can see the tidyverse has a myriad of great tools to quickly analyze data and find insight--and most of this was possible due to the data already being in tidy form! We were able to quickly do a linear regression on a sorted, selected and now labeled group of data with one line of code; had it been a messy data set, most of our time would be devoted to cleaning!
+
