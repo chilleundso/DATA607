@@ -1,0 +1,51 @@
+---
+title: "final_project"
+author: "Patrick Maloney"
+date: "5/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Pull indicies from numbeo API
+
+### Pollution
+```{r}
+library(jsonlite)
+
+apikey <- "x2mmjp3a6651i3"
+numbeo_url <- "https://numbeo.com/api/country_indices?api_key="
+
+url <- URLencode(paste0(numbeo_url, apikey))
+request1 <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=8")
+pollution <- request1$`2020`
+```
+
+```{r}
+pollution
+```
+
+### Healthcare
+```{r}
+request2 <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=5")
+healthcare <- request2$`2020`
+```
+
+```{r}
+healthcare
+```
+
+### Quality of Life
+```{r}
+request3 <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=12")
+quality_life <- request3$`2020`
+```
+
+```{r}
+quality_life
+request3$`2019`
+```
+
+Well Damn, lucky me that this has everything in one table. That should save a lot of work and API calls. I'll leave all this junk from above in for now so you can see how I got here, and then we can clean it up and join this one with the covid data and start analyzing.
