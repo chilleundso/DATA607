@@ -245,3 +245,19 @@ https://github.com/chilleundso/DATA607/blob/master/Project2/Data607_Assignment5_
 
 RPubs:
 https://rpubs.com/ManolisM/Project2-1
+
+
+# indices table
+I am putting this at the bottom for now until we figure out how to clean up this RMD. 
+```{r}
+library(jsonlite)
+library(tidyverse)
+
+request <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=12")
+quality_life <- request$`2020`
+
+obesity <- read.csv("https://raw.githubusercontent.com/pmalo46/DATA607-1/master/Final_Project/obesity.csv")
+indices <- left_join(quality_life, obesity, by = "country")
+indices
+```
+

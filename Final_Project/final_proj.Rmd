@@ -49,3 +49,40 @@ request3$`2019`
 ```
 
 Well Damn, lucky me that this has everything in one table. That should save a lot of work and API calls. I'll leave all this junk from above in for now so you can see how I got here, and then we can clean it up and join this one with the covid data and start analyzing.
+
+Here is some obesity data from the the CIA world factbook rankings, I will pull this in and attempt to join it
+
+```{r}
+library(tidyverse)
+obesity <- read.csv("https://raw.githubusercontent.com/pmalo46/DATA607-1/master/Final_Project/obesity.csv")
+head(obesity)
+```
+The join might be tricky, as the quality of life df has 71 countries and the obesity df has all 192, and there could be differences in the names.
+```{r}
+indices <- inner_join(quality_life, obesity, by = "country")
+indices
+```
+
+That went better than I expected, but it looks like we lost about 7 rows, so I'll try to figure out which ones those were, and I'll probably just manually change the names since there are only 7.
+
+I just went through and corrected the differences. The only two we lost were Taiwan and Hong Kong, for political reasons, so not too bad. Since those are two countries that have been praised in their response to the outbreak, they may be important data oints that we may not want to exclude, so I have switched from an inner join to a left join, so those countries will be included but have null values for obesity.
+
+```{r}
+indices <- left_join(quality_life, obesity, by = "country")
+indices
+```
+
+Now all we need is to merge with the Covid Data. Here is one clean block of code to copy over to whichever will be the final file.
+
+```{r}
+library(jsonlite)
+library(tidyverse)
+
+request <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=12")
+quality_life <- request$`2020`
+
+obesity <- read.csv("https://raw.githubusercontent.com/pmalo46/DATA607-1/master/Final_Project/obesity.csv")
+indices <- left_join(quality_life, obesity, by = "country")
+indices
+```
+
