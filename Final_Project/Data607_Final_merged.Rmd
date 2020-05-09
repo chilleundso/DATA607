@@ -186,7 +186,7 @@ df <- subset(df_merged, select = -c(iso3, Country.Region, Date))
 head(df)
 ```
 
-## Analysis
+## Analysis of death per confirmed cases
 
 ```{r}
 pair_var <- c(2:5, 7:12, 17, 18)
@@ -225,7 +225,34 @@ ggplot(df, aes(x=climate_index, y=death_per_confirmed)) + geom_point() + geom_sm
 This suggests that climate may have an effect on death rates. However, Numbeo's climate index statistic is not an average temperature, but rather a "climate-likeability" index, meaning it is more along the lines of a probability that the average person will enjoy this climate.  Thus, warm but temperate climates are more likely to score higher, whereas more extreme or uncomfortable climates score lower.  So this could either mean that the virus may be less lethal in more extreme climates, or it could be that death rates are higher in areas people are more likely to live.
 
 
+## Analysis of death per capita
 
+```{r}
+pair_var <- c(2:5, 7:12, 17, 18)
+pairs(df[pair_var])
+```
+
+judging by these pair plots, it looks like the most interesting correlations for death rates among confirmed cases might be cpi_index, quality_of_life_index, climate_index, obesity_rate, and possibly pollution_index and healthcare_index
+
+```{r}
+m_health2 <- lm(death_per_10kcapita ~ healthcare_index, df)
+summary(m_health2)
+
+m_pol2 <- lm(death_per_10kcapita ~ pollution_index, df)
+summary(m_pol2)
+
+m_qol2 <- lm(death_per_10kcapita ~ quality_of_life_index, df)
+summary(m_qol2)
+
+m_clim2 <- lm(death_per_10kcapita ~ climate_index, df)
+summary(m_clim2)
+
+m_obes2 <- lm(death_per_10kcapita ~ obesity_rate, df)
+summary(m_obes2)
+
+m_cpi2 <- lm(death_per_10kcapita ~ cpi_index, df)
+summary(m_cpi2)
+```
 
 
 
