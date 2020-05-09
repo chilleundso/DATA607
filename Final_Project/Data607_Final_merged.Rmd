@@ -5,8 +5,8 @@ output:
   html_document:
     df_print: paged
   pdf_document: default
-editor_options:
-  chunk_output_type: console
+  chunk_output_type: inline
+
 ---
 
 
@@ -31,9 +31,11 @@ library(ggplot2)
 library(knitr)
 library(date)
 library(tidyverse)
+library(jsonlite)
 ```
 
-We download there seperate CSV (for confirmed cases, recoveries and deaths) from the John Hopkins GitHub account and save them as data frames:
+We download three seperate CSV (for confirmed cases, recoveries and deaths) from the John Hopkins GitHub account and save them as data frames:
+
 
 ```{r data_download,eval=TRUE}
 
@@ -110,7 +112,8 @@ deaths$Date<-as.Date(deaths$Date,format='X%m.%d.%y')
 #adding a status label to flag data belongs to deaddata set
 deaths$Status <- 'dead'
 
-# kable(head(confs))
+kable(head(confs))
+
 ```
 
 ```{r latest_per_country,eval=TRUE}
@@ -138,30 +141,90 @@ latestmasterwide <- tidyr::spread(latestmaster,Status,Amount)
 
 
 
-```{r add_ISO_master,eval=TRUE}
+
+```{r add_ISO_master, echo=TRUE}
 master <- merge(latestmasterwide, countryISOfull, by.x = "Country.Region", by.y = "Combined_Key",all.x = TRUE)
+
+kable(head(master))
 ```
 
-```{r add_measures,eval=TRUE}
+```{r add_measures}
 master$death_per_10kcapita <- master$dead / master$Population *10000
-master$death_per_conirmed <- master$dead / master$confirmed
+master$death_per_confirmed <- master$dead / master$confirmed
 ```
 
 ```{r scatter,eval=TRUE}
-ggplot(master, aes(x=death_per_10kcapita, y=death_per_conirmed)) + geom_point()
+ggplot(master, aes(x=death_per_10kcapita, y=death_per_confirmed)) + geom_point()
 ```
 
+Merge with numbeo data
 ```{r}
-library(jsonlite)
-library(tidyverse)
+
 
 request <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=12")
 quality_life <- request$`2020`
 
 obesity <- read.csv("https://raw.githubusercontent.com/pmalo46/DATA607-1/master/Final_Project/obesity.csv")
 indices <- left_join(quality_life, obesity, by = "country")
-indices
+
+kable(indices)
+names(indices)
 ```
+Change name of coutry code column to merge with master
+```{r}
+names(indices)[names(indices) == "iso3166_country_code"] <- "iso2"
+names(indices)
+```
+
+Merge the two data sets
+```{r}
+df_merged <- left_join(indices, master, by = "iso2")
+kable(head(df_merged))
+```
+```{r}
+df <- subset(df_merged, select = -c(iso3, Country.Region, Date))
+head(df)
+```
+
+## Analysis
+
+```{r}
+pair_var <- c(2:5, 7:12, 17, 18)
+pairs(df[pair_var])
+```
+
+judging by these pair plots, it looks like the most interesting correlations for death rates among confirmed cases might be cpi_index, quality_of_life_index, climate_index, obesity_rate, and possibly pollution_index and healthcare_index
+
+```{r}
+m_health <- lm(death_per_confirmed ~ healthcare_index, df)
+summary(m_health)
+
+m_pol <- lm(death_per_confirmed ~ pollution_index, df)
+summary(m_pol)
+
+m_qol <- lm(death_per_confirmed ~ quality_of_life_index, df)
+summary(m_qol)
+
+m_clim <- lm(death_per_confirmed ~ climate_index, df)
+summary(m_clim)
+
+m_obes <- lm(death_per_confirmed ~ obesity_rate, df)
+summary(m_obes)
+
+m_cpi <- lm(death_per_confirmed ~ cpi_index, df)
+summary(m_cpi)
+```
+
+It seems like climate index is he only variable that has any statistical significance at all. Let's take a closer look at that.
+
+```{r}
+ggplot(df, aes(x=climate_index, y=death_per_confirmed)) + geom_point() + geom_smooth(method = "lm", formula = y~x)
+
+```
+
+This suggests that climate may have an effect on death rates. However, Numbeo's climate index statistic is not an average temperature, but rather a "climate-likeability" index, meaning it is more along the lines of a probability that the average person will enjoy this climate.  Thus, warm but temperate climates are more likely to score higher, whereas more extreme or uncomfortable climates score lower.  So this could either mean that the virus may be less lethal in more extreme climates, or it could be that death rates are higher in areas people are more likely to live.
+
+
 
 
 
@@ -171,3 +234,4 @@ https://github.com/chilleundso/DATA607/blob/master/Project2/Data607_Assignment5_
 
 RPubs:
 https://rpubs.com/ManolisM/Project2-1
+
