@@ -1,0 +1,221 @@
+---
+title: "Data 607 - Final Project"
+author: "Patrick Maloney & Manolis Manoli"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+We have chosen to investigate the coronavirus data set provided by John Hopkins University which themselves source the data from DXY, an online platform run by members of the Chinese nedical community.
+
+COVID-19, the scientific name of the coronavirus, had its first recorded case in Wuhan, China in December 2019 and has since across the world with more than 100,000 cases globally as of early March.
+
+We will start by looking at general trends of the spread of the virus, followed by a look at the mortality rate. We finish by investigating the growth rate of confirmed cases, specifically in the most mature case, China, to see if we can find any indication about growth there and make any conclusions about the future of the virus in the rest of the world.
+
+  <br>
+  <br>
+   
+#### 1) Loading required libraries and downloading data
+
+We load all required libraries:
+
+```{r load_libraries, eval=TRUE, results='hide',message=F}
+library(httr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(date)
+library(tidyverse)
+library(jsonlite)
+```
+
+We download three seperate CSV (for confirmed cases, recoveries and deaths) from the John Hopkins GitHub account and save them as data frames:
+
+```{r data_download,eval=TRUE}
+
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
+
+fileConfirmGlobal <- "time_series_covid19_confirmed_global.csv"
+# fileConfirmUS <- "time_series_covid19_confirmed_US.csv"
+fileDeathsGlobal <- "time_series_covid19_deaths_global.csv"
+# fileDeathsUS <- "time_series_covid19_deaths_US.csv"
+fileRecovGlobal <- "time_series_covid19_recovered_global.csv"
+
+
+confsGlobal <- read.csv(paste0(urlRemote, pathGithub, fileConfirmGlobal),header = TRUE)
+# confsUS <- read.csv(paste0(urlRemote, pathGithub, fileConfirmUS),header = TRUE)
+deathsGlobal <- read.csv(paste0(urlRemote, pathGithub, fileDeathsGlobal),header = TRUE)
+# deathsUS <- read.csv(paste0(urlRemote, pathGithub, fileDeathsUS),header = TRUE)
+recovsGlobal<- read.csv(paste0(urlRemote, pathGithub, fileRecovGlobal),header = TRUE)
+```
+
+
+```{r data_download_countryISO,eval=TRUE}
+
+# urlRemote  <- "https://raw.githubusercontent.com/"
+# pathGithub <- "CSSEGISandData/COVID-19/master/csse_covid_19_data/"
+
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "chilleundso/DATA607/master/Final_Project/"
+
+countryISOfile <- "UID_ISO_FIPS_LookUp_Table.csv"
+
+countryISOfull <- read.csv(paste0(urlRemote, pathGithub, countryISOfile),header = TRUE)
+# countryISO <- unique(countryISOfull[,c(3,8)])
+# countryISOmapping <- unique(setDT(countryISO)[order(Country_Region,iso3)], by = "Country_Region")
+```
+
+
+
+#### 2) Data Clean-up
+
+As we can see in the above table the data is provide in a long format. In the below section we transform all 3 data frames to take long format:
+
+```{r create3tables,eval=TRUE}
+#Creating a long table using gather
+confs <- tidyr::gather(confsGlobal, "Date", "Amount", -Province.State, -Country.Region, -Lat, -Long)
+confs <- confs %>%
+  select(Country.Region, Date, Amount,) %>%
+  group_by(Country.Region, Date) %>%
+  summarise(Amount = sum(Amount))
+#transforming the date column into a date structure:
+confs$Date<-as.Date(confs$Date,format='X%m.%d.%y')
+#adding a status label to flag data belongs to confirmed data set
+confs$Status <- 'confirmed'
+
+#Creating a long table using gather
+recovs <- tidyr::gather(recovsGlobal, "Date", "Amount", -Province.State, -Country.Region, -Lat, -Long)
+recovs <- recovs %>%
+select(Country.Region, Date, Amount,) %>%
+group_by(Country.Region, Date) %>%
+summarise(Amount = sum(Amount))
+#transforming the date column into a date structure:
+recovs$Date<-as.Date(recovs$Date,format='X%m.%d.%y')
+#adding a status label to flag data belongs to recovered data set
+recovs$Status <- 'recovered'
+
+#Creating a long table using gather
+deaths <- tidyr::gather(deathsGlobal, "Date", "Amount", -Province.State, -Country.Region, -Lat, -Long)
+deaths <- deaths %>%
+select(Country.Region, Date, Amount,) %>%
+group_by(Country.Region, Date) %>%
+summarise(Amount = sum(Amount))
+#transforming the date column into a date structure:
+deaths$Date<-as.Date(deaths$Date,format='X%m.%d.%y')
+#adding a status label to flag data belongs to deaddata set
+deaths$Status <- 'dead'
+
+kable(head(confs))
+```
+
+```{r latest_per_country,eval=TRUE}
+#retrieve the latest date for each file
+require(data.table)
+
+latestconfs <- as.data.table(confs)
+latestconfs <- latestconfs[latestconfs[, .I[Date == max(Date)], by=Country.Region]$V1]
+
+latestrecovs <- as.data.table(recovs)
+latestrecovs <- latestrecovs[latestrecovs[, .I[Date == max(Date)], by=Country.Region]$V1]
+
+latestdeaths <- as.data.table(deaths)
+latestdeaths <- latestdeaths[latestdeaths[, .I[Date == max(Date)], by=Country.Region]$V1]
+
+```
+
+```{r combine_latest_in_master,eval=TRUE}
+#we stack all three data sets underneath each other
+latestmaster <- rbind(latestconfs,latestrecovs,latestdeaths)
+#we then widen the data set to have three new columns one for each amount of confirmed, recovered and dead cases:
+latestmasterwide <- tidyr::spread(latestmaster,Status,Amount)
+
+```
+
+
+
+```{r add_ISO_master, echo=TRUE}
+master <- merge(latestmasterwide, countryISOfull, by.x = "Country.Region", by.y = "Combined_Key",all.x = TRUE)
+
+kable(head(master))
+```
+
+```{r add_measures}
+master$death_per_10kcapita <- master$dead / master$Population *10000
+master$death_per_confirmed <- master$dead / master$confirmed
+```
+
+```{r scatter,eval=TRUE}
+ggplot(master, aes(x=death_per_10kcapita, y=death_per_confirmed)) + geom_point()
+```
+
+Merge with numbeo data
+```{r}
+
+request <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=12")
+quality_life <- request$`2020`
+
+obesity <- read.csv("https://raw.githubusercontent.com/pmalo46/DATA607-1/master/Final_Project/obesity.csv")
+indices <- left_join(quality_life, obesity, by = "country")
+kable(indices)
+names(indices)
+```
+Change name of coutry code column to merge with master
+```{r}
+names(indices)[names(indices) == "iso3166_country_code"] <- "iso2"
+names(indices)
+```
+
+Merge the two data sets
+```{r}
+df_merged <- left_join(indices, master, by = "iso2")
+kable(head(df_merged))
+```
+```{r}
+df <- subset(df_merged, select = -c(iso3, Country.Region, Date))
+head(df)
+```
+
+## Analysis
+
+```{r}
+pair_var <- c(2:5, 7:12, 17, 18)
+pairs(df[pair_var])
+```
+
+judging by these pair plots, it looks like the most interesting correlations for death rates among confirmed cases might be cpi_index, quality_of_life_index, climate_index, obesity_rate, and possibly pollution_index and healthcare_index
+
+```{r}
+m_health <- lm(death_per_confirmed ~ healthcare_index, df)
+summary(m_health)
+
+m_pol <- lm(death_per_confirmed ~ pollution_index, df)
+summary(m_pol)
+
+m_qol <- lm(death_per_confirmed ~ quality_of_life_index, df)
+summary(m_qol)
+
+m_clim <- lm(death_per_confirmed ~ climate_index, df)
+summary(m_clim)
+
+m_obes <- lm(death_per_confirmed ~ obesity_rate, df)
+summary(m_obes)
+
+m_cpi <- lm(death_per_confirmed ~ cpi_index, df)
+summary(m_cpi)
+```
+
+It seems like climate index is he only variable that has any statistical significance at all. Let's take a closer look at that.
+
+```{r}
+ggplot(df, aes(x=climate_index, y=death_per_confirmed)) + geom_point() + geom_smooth(method = "lm", formula = y~x)
+
+```
+
+This suggests that climate may have an effect on death rates. However, Numbeo's climate index statistic is not an average temperature, but rather a "climate-likeability" index, meaning it is more along the lines of a probability that the average person will enjoy this climate.  Thus, warm but temperate climates are more likely to score higher, whereas more extreme or uncomfortable climates score lower.  So this could either mean that the virus may be less lethal in more extreme climates, or it could be that death rates are higher in areas people are more likely to live.
+
