@@ -12,12 +12,9 @@ output:
 
 We have chosen to investigate the coronavirus data set provided by John Hopkins University which themselves source the data from DXY, an online platform run by members of the Chinese nedical community.
 
-COVID-19, the scientific name of the coronavirus, had its first recorded case in Wuhan, China in December 2019 and has since across the world with more than 100,000 cases globally as of early March.
+We combine this data with data sourced through the API of Numbeo which provides country information on various indicators, including health care and quality of life.
 
-We will start by looking at general trends of the spread of the virus, followed by a look at the mortality rate. We finish by investigating the growth rate of confirmed cases, specifically in the most mature case, China, to see if we can find any indication about growth there and make any conclusions about the future of the virus in the rest of the world.
-
-  <br>
-  <br>
+Our goal is to investigate wether we can identify any correlation between any of these indicators and either the mortality rate (i.e. death per confirmed case) and the death per capita.
    
 #### 1) Loading required libraries and downloading data
 
@@ -34,7 +31,7 @@ library(tidyverse)
 library(jsonlite)
 ```
 
-We download three seperate CSV (for confirmed cases, recoveries and deaths) from the John Hopkins GitHub account and save them as data frames:
+We download three seperate CSV (for confirmed cases, recoveries and deaths) globally from the John Hopkins GitHub account and save them as data frames:
 
 
 ```{r data_download,eval=TRUE}
@@ -56,11 +53,10 @@ deathsGlobal <- read.csv(paste0(urlRemote, pathGithub, fileDeathsGlobal),header 
 recovsGlobal<- read.csv(paste0(urlRemote, pathGithub, fileRecovGlobal),header = TRUE)
 ```
 
+Download a table that will enable us to merge a unique country iso code and the population so that we can combine the data with the numbeo API data.
 
 ```{r data_download_countryISO,eval=TRUE}
 
-# urlRemote  <- "https://raw.githubusercontent.com/"
-# pathGithub <- "CSSEGISandData/COVID-19/master/csse_covid_19_data/"
 
 urlRemote  <- "https://raw.githubusercontent.com/"
 pathGithub <- "chilleundso/DATA607/master/Final_Project/"
@@ -68,8 +64,7 @@ pathGithub <- "chilleundso/DATA607/master/Final_Project/"
 countryISOfile <- "UID_ISO_FIPS_LookUp_Table.csv"
 
 countryISOfull <- read.csv(paste0(urlRemote, pathGithub, countryISOfile),header = TRUE)
-# countryISO <- unique(countryISOfull[,c(3,8)])
-# countryISOmapping <- unique(setDT(countryISO)[order(Country_Region,iso3)], by = "Country_Region")
+
 ```
 
 
@@ -140,7 +135,7 @@ latestmasterwide <- tidyr::spread(latestmaster,Status,Amount)
 ```
 
 
-
+We merge the wide master data set with the country code and population
 
 ```{r add_ISO_master, echo=TRUE}
 master <- merge(latestmasterwide, countryISOfull, by.x = "Country.Region", by.y = "Combined_Key",all.x = TRUE)
@@ -148,18 +143,16 @@ master <- merge(latestmasterwide, countryISOfull, by.x = "Country.Region", by.y 
 kable(head(master))
 ```
 
+We add the death per confirmed case and a death per 10'000 inhabitants measure
+
 ```{r add_measures}
 master$death_per_10kcapita <- master$dead / master$Population *10000
 master$death_per_confirmed <- master$dead / master$confirmed
 ```
 
-```{r scatter,eval=TRUE}
-ggplot(master, aes(x=death_per_10kcapita, y=death_per_confirmed)) + geom_point()
-```
 
 Merge with numbeo data
 ```{r}
-
 
 request <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=12")
 quality_life <- request$`2020`
@@ -186,7 +179,26 @@ df <- subset(df_merged, select = -c(iso3, Country.Region, Date))
 head(df)
 ```
 
+## Comparing death per confirmed case and per capita
+```{r}
+m_confrimVcapita <- lm(death_per_confirmed ~ death_per_10kcapita, df)
+summary(m_confrimVcapita)
+```
+
+With an adjusted R squarred of 64% we can see that these two measures of the response to corona do explain a large proportion of their respective variability. We need to keep in mind that, cleary, the death per confirmed case highly depends on the amount of testing that is being done in each of the countries.
+
+
+```{r,warning=F}
+ggplot(df, aes(x= death_per_confirmed, y= death_per_10kcapita)) + 
+                  geom_point() +
+                  geom_text(aes(label=country),hjust=0, vjust=-0.5) + 
+                  geom_smooth(method='lm', formula= y  ~ x )
+```
+
+
 ## Analysis of death per confirmed cases
+
+We start by investigating all scatterplots:
 
 ```{r}
 pair_var <- c(2:5, 7:12, 17, 18)
@@ -217,7 +229,7 @@ summary(m_cpi)
 
 It seems like climate index is he only variable that has any statistical significance at all. Let's take a closer look at that.
 
-```{r}
+```{r,warning=F}
 ggplot(df, aes(x=climate_index, y=death_per_confirmed)) + geom_point() + geom_smooth(method = "lm", formula = y~x)
 
 ```
@@ -227,12 +239,7 @@ This suggests that climate may have an effect on death rates. However, Numbeo's 
 
 ## Analysis of death per capita
 
-```{r}
-pair_var <- c(2:5, 7:12, 17, 18)
-pairs(df[pair_var])
-```
-
-judging by these pair plots, it looks like the most interesting correlations for death rates among confirmed cases might be cpi_index, quality_of_life_index, climate_index, obesity_rate, and possibly pollution_index and healthcare_index
+We repeat the analysis above with deaths per capita (per 10'000 inhabitants) and compare the results to the above model fitting 
 
 ```{r}
 m_health2 <- lm(death_per_10kcapita ~ healthcare_index, df)
@@ -255,10 +262,29 @@ summary(m_cpi2)
 ```
 
 
+Given that a lot of focus during the crisis has been on the health care system we will investigate this relationship.
+  
+With an adjusted R squared of 7% we cannot conclude that health care rating is a specifically strong indicator of the amount of people that die in a country. However, we want to investigate this further to see if we can see find a reason for why it could be such a small predictive power.
 
-GitHub:
-https://github.com/chilleundso/DATA607/blob/master/Project2/Data607_Assignment5_Corona.Rmd
 
-RPubs:
-https://rpubs.com/ManolisM/Project2-1
+```{r,warning=F}
+
+
+ggplot(df, aes(x= healthcare_index, y= death_per_10kcapita)) + 
+                  geom_point() +
+                  geom_text(aes(label=country),hjust=0, vjust=-0.5) + 
+                  geom_smooth(method='lm', formula= y  ~ x ) 
+
+```
+
+We can see that contrary to what we would have anticipated we have a potivie correlation between health care rating and the deaths per capita. The countries that stick out especially are Belgium, Spain, Italy, the UK and France. THey all have a death per capita of more than 4 per 10 thousand. while having a relatively well rated health care system.
+It seems like there is a large divide between the European countries and the rest of the world (specifically the Asian countries). Looking at the countries with the best rated healthcare we clearly see that Asian countries have a much lower death rate (less than 5 per million inhabitants) while the Western countries with similar ratings have 20 to 100 times higher rate of death per capita. THis might have more to do with the response and ability to lock down the economy effectively versus western countries:
+
+```{r,warning=F}
+head(arrange(df, desc(healthcare_index))[,c(1,4,17)])
+
+
+``` 
+
+Finally, we need to add that this is not the end of this epidemic and numbers will surely be updated and corrected for the foreseeable future.
 
