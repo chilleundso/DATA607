@@ -10,13 +10,13 @@ output:
 ---
 
 
-We have chosen to investigate the coronavirus data set provided by John Hopkins University which themselves source the data from DXY, an online platform run by members of the Chinese nedical community.
+We have chosen to investigate the coronavirus data set provided by John Hopkins University which themselves source the data from DXY, an online platform run by members of the Chinese medical community.
 
 We combine this data with data sourced through the API of Numbeo which provides country information on various indicators, including health care and quality of life.
 
 Our goal is to investigate wether we can identify any correlation between any of these indicators and either the mortality rate (i.e. death per confirmed case) and the death per capita.
    
-#### 1) Loading required libraries and downloading data
+## Loading required libraries and downloading data
 
 We load all required libraries:
 
@@ -69,7 +69,7 @@ countryISOfull <- read.csv(paste0(urlRemote, pathGithub, countryISOfile),header 
 
 
 
-#### 2) Data Clean-up
+## Data Clean-up
 
 As we can see in the above table the data is provide in a long format. In the below section we transform all 3 data frames to take long format:
 
@@ -111,7 +111,7 @@ kable(head(confs))
 
 ```
 
-```{r latest_per_country,eval=TRUE}
+```{r latest_per_country,eval=TRUE,message=F}
 #retrieve the latest date for each file
 require(data.table)
 
@@ -140,7 +140,7 @@ We merge the wide master data set with the country code and population
 ```{r add_ISO_master, echo=TRUE}
 master <- merge(latestmasterwide, countryISOfull, by.x = "Country.Region", by.y = "Combined_Key",all.x = TRUE)
 
-kable(head(master))
+kable(head(master)) 
 ```
 
 We add the death per confirmed case and a death per 10'000 inhabitants measure
@@ -152,7 +152,7 @@ master$death_per_confirmed <- master$dead / master$confirmed
 
 
 Merge with numbeo data
-```{r}
+```{r,warning=F}
 
 request <- fromJSON("https://numbeo.com/api/rankings_by_country_historical?api_key=x2mmjp3a6651i3&section=12")
 quality_life <- request$`2020`
@@ -160,23 +160,28 @@ quality_life <- request$`2020`
 obesity <- read.csv("https://raw.githubusercontent.com/pmalo46/DATA607-1/master/Final_Project/obesity.csv")
 indices <- left_join(quality_life, obesity, by = "country")
 
-kable(indices)
-names(indices)
+kable(head(indices))
+ 
+
+names(indices) 
 ```
+
 Change name of coutry code column to merge with master
 ```{r}
 names(indices)[names(indices) == "iso3166_country_code"] <- "iso2"
 names(indices)
 ```
 
-Merge the two data sets
-```{r}
+Merge the two data sets 
+```{r,warning=F}
 df_merged <- left_join(indices, master, by = "iso2")
 kable(head(df_merged))
 ```
+
+Final data set:
 ```{r}
 df <- subset(df_merged, select = -c(iso3, Country.Region, Date))
-head(df)
+kable(df)
 ```
 
 ## Comparing death per confirmed case and per capita
@@ -288,3 +293,5 @@ head(arrange(df, desc(healthcare_index))[,c(1,4,17)])
 
 Finally, we need to add that this is not the end of this epidemic and numbers will surely be updated and corrected for the foreseeable future.
 
+GitHub:
+https://github.com/chilleundso/DATA607/blob/master/Final_Project/Data607_Final_merged.Rmd
