@@ -339,8 +339,7 @@ ggplot(df, aes(x= purchasing_power_incl_rent_index, y= death_per_10kcapita)) +
 ```
 
 
-## Health Care Rating vs Death Per Capita {.smaller}
-
+## Health Care vs Death Per Capita Summary {.smaller}
 
 Health Care Rating has an adjusted R squared of ~7%, therefore, explains only very little of the variability of the death per capita.
 
@@ -348,7 +347,7 @@ Health Care Rating has an adjusted R squared of ~7%, therefore, explains only ve
 summary(m_health2)
 ```
 
-## Analysis of death per capita {.smaller}
+## Health Care vs Death Per Capita Graph {.smaller}
 
 Similar to the purchasing power also the health care rating looks to be positively correlated to death per capita. It, therefore, seems that the quality of the health care is not as important factors in estimating the death per capita.
 
