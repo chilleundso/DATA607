@@ -8,7 +8,11 @@ smaller: true
 
 ## Introduction
 
-We have chosen to investigate the coronavirus data set provided by John Hopkins University which themselves source the data from DXY, an online platform run by members of the Chinese nedical community.
+We have chosen to investigate the coronavirus data set provided by John Hopkins University which themselves source the data from DXY, an online platform run by members of the Chinese medical community.
+
+We combine this data with data sourced through the API of Numbeo which provides country information on various indicators, including health care and quality of life.
+
+Our goal is to investigate wether we can identify any correlation between any of these indicators and either the mortality rate (i.e. death per confirmed case) or the death per capita.
 
 
 
@@ -17,7 +21,7 @@ We have chosen to investigate the coronavirus data set provided by John Hopkins 
 
 We load all required libraries:
 
-```{r load_libraries, eval=TRUE, results='hide',message=F, include=T}
+```{r load_libraries, eval=TRUE, results='hide',message=F, include=T, warning=F}
 library(httr)
 library(dplyr)
 library(tidyr)
@@ -157,7 +161,7 @@ kable(head(latestmasterwide)) %>%
 ```
 
 
-## Adding Country information and Corona Metrics {.smaller}
+## Merging Country Population and Corona Metrics {.smaller}
 
 ```{r add_ISO_master, echo=TRUE}
 master <- merge(latestmasterwide, countryISOfull, by.x = "Country.Region", by.y = "Combined_Key",all.x = TRUE)
@@ -271,44 +275,97 @@ ggplot(df, aes(x=climate_index, y=death_per_confirmed)) + geom_point() + geom_sm
 
 This suggests that climate may have an effect on death rates. However, Numbeo's climate index statistic is not an average temperature, but rather a "climate-likeability" index, meaning it is more along the lines of a probability that the average person will enjoy this climate.  Thus, warm but temperate climates are more likely to score higher, whereas more extreme or uncomfortable climates score lower.  So this could either mean that the virus may be less lethal in more extreme climates, or it could be that death rates are higher in areas people are more likely to live.
 
+## Death Per Capita Overview
 
-## Analysis of death per capita
+The countries with the 20 highest deaths per capita:
 
-We repeat the analysis above with deaths per capita (per 10'000 inhabitants) and compare the results to the above model fitting 
+```{r,warning=F,results=T,echo=FALSE,fig.height = 5, fig.width = 9}
+
+dfshort <-arrange(df,-death_per_10kcapita)[0:20,]
+
+ggplot(dfshort, aes(x =reorder(country, death_per_10kcapita) , y = death_per_10kcapita)) +
+  geom_col( width = 0.7) + 
+  coord_flip() +
+  xlab("Country") +
+  ylab("Death Per Capita (per 10'000)")
+```
+
+## Analysis of Death Per Capita {.smaller}
+
+We repeat the analysis of death per confirmed case with deaths per capita (per 10'000 inhabitants), fitting it to various country indicators:
 
 ```{r}
 m_health2 <- lm(death_per_10kcapita ~ healthcare_index, df)
-summary(m_health2)
+#summary(m_health2)
 
 m_pol2 <- lm(death_per_10kcapita ~ pollution_index, df)
-summary(m_pol2)
+#summary(m_pol2)
 
 m_qol2 <- lm(death_per_10kcapita ~ quality_of_life_index, df)
-summary(m_qol2)
+#summary(m_qol2)
 
 m_clim2 <- lm(death_per_10kcapita ~ climate_index, df)
-summary(m_clim2)
+#summary(m_clim2)
 
 m_obes2 <- lm(death_per_10kcapita ~ obesity_rate, df)
-summary(m_obes2)
+#summary(m_obes2)
 
 m_cpi2 <- lm(death_per_10kcapita ~ cpi_index, df)
-summary(m_cpi2)
+#summary(m_cpi2)
+
+m_purchpower2 <- lm(death_per_10kcapita ~ purchasing_power_incl_rent_index, df)
+#summary(m_purchpower2)
+```
+          
+## Purchasing Power vs Death Per Capita Summary {.smaller}
+
+Purchasing Power has the largest adjusted R squared amongst the models with ~12%.
+
+```{r}
+summary(m_purchpower2)
+```
+
+## Purchasing Power vs Death Per Capita Graph {.smaller}
+
+As we saw in the summary output table there is a positive correlation between Purchasing Power and deaths per capita. This is somewhat counter-intuitive but looking at the countries in the top right corner we can see that "wealthier" Western countries are pulling up the regression.
+
+```{r,warning=F,results=T,echo=FALSE}
+ggplot(df, aes(x= purchasing_power_incl_rent_index, y= death_per_10kcapita)) + 
+                  geom_point() +
+                  geom_text(aes(label=country),hjust=0, vjust=-0.5) + 
+                  geom_smooth(method='lm', formula= y  ~ x ) +
+                  xlab("Purchasing Power") +
+                  ylab("Death Per Capita (per 10'000)")
 ```
 
 
+## Health Care Rating vs Death Per Capita {.smaller}
+
+
+Health Care Rating has an adjusted R squared of ~7%, therefore, explains only very little of the variability of the death per capita.
+
 ```{r}
+summary(m_health2)
+```
+
+## Analysis of death per capita {.smaller}
+
+Similar to the purchasing power also the health care rating looks to be positively correlated to death per capita. It, therefore, seems that the quality of the health care is not as important factors in estimating the death per capita.
+
+```{r,warning=F,results=T,echo=FALSE}
 
 
 ggplot(df, aes(x= healthcare_index, y= death_per_10kcapita)) + 
                   geom_point() +
                   geom_text(aes(label=country),hjust=0, vjust=-0.5) + 
-                  geom_smooth(method='lm', formula= y  ~ x )
+                  geom_smooth(method='lm', formula= y  ~ x ) +
+                  xlab("Health Care Rating") +
+                  ylab("Death Per Capita (per 10'000)")
 
 ```
 
 
-```{r}
+```{r,warning=F,results=T,echo=FALSE,include=F}
 
 dfless1 <- dplyr::filter(df, death_per_10kcapita < 1 )
 m_health3 <- lm(death_per_10kcapita ~ healthcare_index, dfless1)
@@ -320,9 +377,15 @@ ggplot(dfless1, aes(x= healthcare_index, y= death_per_10kcapita)) +
                   geom_smooth(method='lm', formula= y  ~ x )
 ```
 
-GitHub:
-https://github.com/chilleundso/DATA607/blob/master/Project2/Data607_Assignment5_Corona.Rmd
+## Conclusion {.smaller}
 
-RPubs:
-https://rpubs.com/ManolisM/Project2-1
+We can see that, contrary to what we would have anticipated, we have a positive correlation between health care rating and the deaths per capita. The countries that stick out especially are Belgium, Spain, Italy, the UK and France. They all have a death per capita of more than 4 per 10 thousand. while having a relatively well rated health care system.
+  
+It seems like there is a large divide between the European countries and the rest of the world (specifically the Asian countries). Looking at the countries with the best rated healthcare we clearly see that Asian countries have a much lower death rate (less than 5 per million inhabitants) while the Western countries with similar ratings have 20 to 100 times higher rate of death per capita. This might have more to do with the response and ability to lock down the economy effectively versus western countries:
+
+```{r,warning=F}
+head(arrange(df, desc(healthcare_index))[,c(1,4,17)])
+
+
+``` 
 
